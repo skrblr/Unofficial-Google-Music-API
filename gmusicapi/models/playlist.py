@@ -77,7 +77,8 @@ class Playlist(object):
 
 
     def from_json(self, jsobj):
-        assert jsobj['kind'] == Playlist.kind()
+        if jsobj['kind']:
+            assert jsobj['kind'] == Playlist.kind()
 
         for key, value in jsobj.iteritems():
             if key == 'kind':
@@ -108,7 +109,8 @@ class PlaylistList(object):
         return self._items
 
     def from_json(self, jsobj):
-        assert jsobj['kind'] == PlaylistList.kind()
+        if jsobj['kind']:
+            assert jsobj['kind'] == PlaylistList.kind()
 
         if 'nextPageToken' in jsobj:
             self._nextPageToken = jsobj['nextPageToken']

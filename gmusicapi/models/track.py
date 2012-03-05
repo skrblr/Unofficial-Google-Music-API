@@ -300,7 +300,8 @@ class Track(object):
 
 
     def from_json(self, jsobj):
-        assert jsobj['kind'] == Track.kind()
+        if jsobj['kind']:
+            assert jsobj['kind'] == Track.kind()
 
         for key, value in jsobj.iteritems():
             if key == 'kind':
@@ -331,7 +332,8 @@ class TrackList(object):
         return self._items
 
     def from_json(self, jsobj):
-        assert jsobj['kind'] == TrackList.kind()
+        if jsobj['kind']:
+            assert jsobj['kind'] == TrackList.kind()
 
         if 'nextPageToken' in jsobj:
             self._nextPageToken = jsobj['nextPageToken']
