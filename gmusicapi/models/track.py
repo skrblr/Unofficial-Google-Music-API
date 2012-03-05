@@ -22,7 +22,7 @@ class Track(object):
     def kind():
         return 'sj#track'
 
-    def __init__(self):
+    def __init__(self, jsdata=None):
         self._album = None
         self._albumArtRef = None
         self._albumArtist = None
@@ -47,6 +47,9 @@ class Track(object):
         self._trackNumber = None
         self._trackType = None
         self._year = None
+
+        if jsdata:
+            self.from_json(jsdata)
 
     @property
     def album(self):
@@ -300,7 +303,7 @@ class Track(object):
 
 
     def from_json(self, jsobj):
-        if jsobj['kind']:
+        if 'kind' in jsobj:
             assert jsobj['kind'] == Track.kind()
 
         for key, value in jsobj.iteritems():
@@ -332,7 +335,7 @@ class TrackList(object):
         return self._items
 
     def from_json(self, jsobj):
-        if jsobj['kind']:
+        if 'kind' in jsobj:
             assert jsobj['kind'] == TrackList.kind()
 
         if 'nextPageToken' in jsobj:

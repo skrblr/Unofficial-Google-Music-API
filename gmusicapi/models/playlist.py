@@ -22,13 +22,16 @@ class Playlist(object):
     def kind():
         return 'sj#playlist'
 
-    def __init__(self):
+    def __init__(self, jsdata=None):
         self._creationTimestamp = None
         self._deleted = None
         self._lastModifiedTimestamp = None
         self._name = None
         self._id = None
         self._type = None
+
+        if jsdata:
+            self.from_json(jsdata)
 
     @property
     def creationTimestamp(self):
@@ -77,7 +80,7 @@ class Playlist(object):
 
 
     def from_json(self, jsobj):
-        if jsobj['kind']:
+        if 'kind' in jsobj:
             assert jsobj['kind'] == Playlist.kind()
 
         for key, value in jsobj.iteritems():
@@ -109,7 +112,7 @@ class PlaylistList(object):
         return self._items
 
     def from_json(self, jsobj):
-        if jsobj['kind']:
+        if 'kind' in jsobj:
             assert jsobj['kind'] == PlaylistList.kind()
 
         if 'nextPageToken' in jsobj:

@@ -40,6 +40,7 @@ from protocol import WC_Protocol, MM_Protocol, SJ_Protocol
 from utils import utils
 from utils.apilogging import UsesLog
 from models.track import Track
+from models.playlist import Playlist
 
 class SkyjamException(Exception):
     def __init__(self, message):
@@ -233,6 +234,39 @@ class Api(UsesLog):
 
     def get_sj_playlists(self):
         return self._sj_call('playlists')
+
+    def sj_create_playlist(self, playlist):
+        name = playlist
+        if type(playlist) is Playlist:
+            name = playlist.name
+
+        data =  { 'mutations': [ {
+                    'create' : {
+                        'name': name
+                    }
+                } ] }
+
+        jsdata = json.dumps(data)
+
+        return self._sj_call('playlist_batch', jsdata)
+
+    def sj_delete_playlist(self, playlist):
+        """Deletes a playlist.
+
+        :param playlist: A Playlist model, or a string id of a playlist.
+        """
+        if type(playlist) is Playlist:
+            playlist = playlist.id
+
+        data =  { 'mutations': [ {
+                    'delete': {
+                        'id': playlist
+                    }
+                } ] }
+
+        jsdata = json.dumps(data)
+
+        return self._sj_call('playlist_batch', jsdata)
 
     def get_playlist_songs(self, playlist_id):
         """Returns a list of `song dictionaries`__, which include `entryId` keys for the given playlist.
@@ -442,11 +476,11 @@ class Api(UsesLog):
 
         return res
 
-    def _sj_call(self, resource, *args):
+    def _sj_call(self, resource, data=None, *args):
         url_f = getattr(SJ_Protocol.MusicURL, resource)
         url = url_f(*args)
 
-        err, resp = self.sj_session.request(url)
+        err, resp = self.sj_session.request(url, data)
         if err is not None:
             raise SkyjamException('Error code %d' % err)
 

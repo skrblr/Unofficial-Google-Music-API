@@ -262,11 +262,12 @@ class SJ_Session:
     def logout(self):
         self.client = None
 
-    def request(self, url, data='', headers={}):
-        data = urlencode(data)
-        if data == '':
+    def request(self, url, data=None, headers={}):
+        if not data:
             data = None
         else:
+            if type(data) is not str:
+                data = urlencode(data)
             data = data.encode('utf8')
 
         if not 'Content-Type' in headers:
