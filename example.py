@@ -50,7 +50,7 @@ def main():
     api = init()
 
     print "Loading library...",
-    library = api.get_all_songs()
+    library = api.get_sj_tracks()
     print "done"
 
     print len(library), "tracks detected."
@@ -72,16 +72,16 @@ def main():
 
 
     playlist_name = raw_input("New playlist name: ")
-    res = api.create_playlist(playlist_name)
+    res = api.sj_create_playlist(playlist_name)
 
-    if not res['success']:
+    if not res[u'mutate_response'][0][u'response_code'] == u'OK':
         print "Failed to make the playlist."
         return
 
-    print "Made new playlist named",res['title']
+    print "Made new playlist named", playlist_name
 
 
-    playlist_id = res['id']
+    playlist_id = res[u'mutate_response'][0][u'id']
     res = api.add_songs_to_playlist(playlist_id, song_id)
     print "Added to playlist."
 
@@ -89,7 +89,7 @@ def main():
     print "Changed playlist name to 'api playlist'."
 
     raw_input("Press enter to delete the playlist.")
-    res = api.delete_playlist(playlist_id)
+    res = api.sj_delete_playlist(playlist_id)
     print "Deleted playlist."
 
     print "Done!"
