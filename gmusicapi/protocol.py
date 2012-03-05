@@ -29,6 +29,7 @@ from uuid import getnode as getmac
 from socket import gethostname
 import base64
 import hashlib
+import json
 
 from mutagen.easyid3 import EasyID3
 from mutagen.mp3 import MP3
@@ -36,6 +37,8 @@ from mutagen.mp3 import MP3
 import metadata_pb2
 from utils import utils
 from utils.apilogging import LogController
+from models.track import Track, TrackList
+from models.playlist import Playlist, PlaylistList
 
 
 supported_filetypes = ("mp3")
@@ -786,3 +789,40 @@ class MM_Protocol():
             sessions.append((filename, upload.serverId, payload))
 
         return sessions
+
+
+class SJ_Protocol:
+    class MusicURL:
+        BASE_URL = 'https://www.googleapis.com/sj/v1beta1/'
+
+        @staticmethod
+        def tracks():
+            return SJ_Protocol.MusicURL.BASE_URL+'tracks'
+
+        @staticmethod
+        def playlists():
+            return SJ_Protocol.MusicURL.BASE_URL+'playlists'
+
+        @staticmethod
+        def playlist_entries(plid):
+            return SJ_Protocol.MusicURL.BASE_URL+'playlists?plid=%s' % plid
+
+    def __init__(self):
+        pass
+
+    def tracks(self, response):
+        jsdata = json.loads(response)
+
+        tl = TrackList(jsdata)
+        return tl.items
+
+    def playlists(self, response):
+        jsdata = json.loads(response)
+
+        pl = PlaylistList(jsdata)
+        return pl.items
+
+    def playlist_entries(self, response):
+        jsdata = json.loads(response)
+
+        return jsdata

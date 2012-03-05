@@ -36,6 +36,19 @@ import mechanize
 from utils.apilogging import UsesLog
 from utils.clientlogin import ClientLogin
 
+try:
+    # These are for python3 support
+    from urllib.request import urlopen, Request
+    from urllib.error import HTTPError
+    from urllib.parse import urlencode
+    unistr = str
+except ImportError:
+    # Fallback to python2
+    from urllib2 import urlopen, Request
+    from urllib2 import HTTPError
+    from urllib import urlencode
+    unistr = unicode
+
 
 class AlreadyLoggedIn(exceptions.Exception):
     pass
@@ -232,3 +245,42 @@ class MM_Session:
         return self.jumper.getresponse()
 
 
+class SJ_Session:
+    """A session using the SkyJam Service API."""
+
+    def __init__(self):
+        self.client = None
+
+    def login(self, email, password):
+        self.client = ClientLogin(email, password, 'sj')
+
+        if self.client.get_auth_token() is None:
+            return False
+
+        return True
+
+    def logout(self):
+        self.client = None
+
+    def request(self, url, data='', headers={}):
+        data = urlencode(data)
+        if data == '':
+            data = None
+        else:
+            data = data.encode('utf8')
+
+        if not 'Content-Type' in headers:
+            headers['Content-Type'] = 'application/json'
+        headers['Authorization'] = 'GoogleLogin auth=%s' % self.client.get_auth_token()
+
+        req = Request(url, data, headers)
+        err = None
+
+        try:
+            resp_obj = urlopen(req)
+        except HTTPError as e:
+            err = e.code
+            return err, e.read()
+        resp = resp_obj.read()
+        resp_obj.close()
+        return None, unistr(resp, encoding='utf8')
