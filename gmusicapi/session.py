@@ -34,6 +34,7 @@ from decorator import decorator
 import mechanize
 
 from utils.apilogging import UsesLog
+from utils.clientlogin import ClientLogin
 
 
 class AlreadyLoggedIn(exceptions.Exception):
@@ -188,26 +189,13 @@ class MM_Session:
         if self.sid:
             raise AlreadyLoggedIn
 
-        payload = {
-            'Email': email,
-            'Passwd': password,
-            'service': 'sj',
-            'accountType': 'GOOGLE'
-        }
-        r = urllib.urlopen("https://google.com/accounts/ClientLogin", 
-                            urllib.urlencode(payload)).read()
+        client = ClientLogin(email, password, 'sj')
+        self.sid = client.get_sid_token()
 
-        first = r.split("\n")[0]
-
-        #Bad auth will return Error=BadAuthentication\n
-
-        if first.split("=")[0] == "SID":
-            self.sid = first
-            #self.uauthresp.ParseFromString(self.protopost("upauth", self.uauth))
-            #self.clientstateresp.ParseFromString(self.protopost("clientstate", self.clientstate))
-            return True
-        else:
+        if self.sid is None:
             return False
+
+        return True
 
 
     def logout(self):
@@ -223,7 +211,7 @@ class MM_Session:
         """
 
         self.android.request("POST", "/upsj/"+path, proto.SerializeToString(), {
-            "Cookie": self.sid,
+            "Cookie": ('SID=%s' % self.sid),
             "Content-Type": "application/x-google-protobuf"
         })
         r = self.android.getresponse()
@@ -237,7 +225,7 @@ class MM_Session:
         if not headers:
             headers = {
                 "Content-Type": "application/x-www-form-urlencoded", #? shouldn't it be json? but that's what the google client sends
-                "Cookie": self.sid}
+                "Cookie": ('SID=%s' % self.sid)}
 
         self.jumper.request("POST", url, encoded_data, headers)
 
