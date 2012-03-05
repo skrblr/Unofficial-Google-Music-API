@@ -35,11 +35,16 @@ from mutagen.easyid3 import EasyID3
 from mutagen.mp3 import MP3
 import validictory
 
-from session import WC_Session, MM_Session
-from .protocol import WC_Protocol, MM_Protocol
+from session import WC_Session, MM_Session, SJ_Session
+from protocol import WC_Protocol, MM_Protocol, SJ_Protocol
 from utils import utils
 from utils.apilogging import UsesLog
 from models.track import Track
+
+class SkyjamException(Exception):
+    def __init__(self, message):
+        Exception.__init__(self, message)
+        self.msg = message
 
 class Api(UsesLog):
     def __init__(self):
@@ -48,6 +53,9 @@ class Api(UsesLog):
 
         self.mm_session = MM_Session()
         self.mm_protocol = MM_Protocol()
+
+        self.sj_session = SJ_Session()
+        self.sj_protocol = SJ_Protocol()
 
         self.init_logger()
 
@@ -74,6 +82,7 @@ class Api(UsesLog):
 
         self.wc_session.login(email, password)
         self.mm_session.login(email, password)
+        self.sj_session.login(email, password)
 
 
         if self.is_authenticated():
@@ -91,6 +100,7 @@ class Api(UsesLog):
 
         self.wc_session.logout()
         self.mm_session.logout()
+        self.sj_session.logout()
 
         self.log.info("logged out")
 
@@ -217,6 +227,12 @@ class Api(UsesLog):
             tracks.append(track)
 
         return tracks
+
+    def get_sj_tracks(self):
+        return self._sj_call('tracks')
+
+    def get_sj_playlists(self):
+        return self._sj_call('playlists')
 
     def get_playlist_songs(self, playlist_id):
         """Returns a list of `song dictionaries`__, which include `entryId` keys for the given playlist.
@@ -425,6 +441,17 @@ class Api(UsesLog):
             self.log.debug("wc_call response <suppressed>")
 
         return res
+
+    def _sj_call(self, resource, *args):
+        url_f = getattr(SJ_Protocol.MusicURL, resource)
+        url = url_f(*args)
+
+        err, resp = self.sj_session.request(url)
+        if err is not None:
+            raise SkyjamException('Error code %d' % err)
+
+        parse_f = getattr(self.sj_protocol, resource)
+        return parse_f(resp)
 
 
     #---
