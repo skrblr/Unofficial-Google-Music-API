@@ -90,7 +90,7 @@ class Playlist(object):
 class PlaylistList(object):
     @staticmethod
     def kind():
-        return 'sj#PlaylistList'
+        return 'sj#playlistList'
 
     def __init__(self, jsdata=None):
         self._nextPageToken = None
