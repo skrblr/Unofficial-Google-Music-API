@@ -17,7 +17,9 @@
 #You should have received a copy of the GNU General Public License
 #along with gmusicapi.  If not, see <http://www.gnu.org/licenses/>.
 
-class Playlist(object):
+from base import ModelBase
+
+class Playlist(ModelBase):
     @staticmethod
     def kind():
         return 'sj#playlist'
@@ -30,8 +32,7 @@ class Playlist(object):
         self._id = None
         self._type = None
 
-        if jsdata:
-            self.from_json(jsdata)
+        ModelBase.__init__(self, jsdata)
 
     @property
     def creationTimestamp(self):
@@ -61,7 +62,8 @@ class Playlist(object):
 
     @name.setter
     def name(self, value):
-        assert type(value) is str
+        if type(value) is not str: raise TypeError
+        self._dirtyProps.add('name')
         self._name = value
 
 
@@ -80,8 +82,7 @@ class Playlist(object):
 
 
     def from_json(self, jsobj):
-        if 'kind' in jsobj:
-            assert jsobj['kind'] == Playlist.kind()
+        ModelBase.from_json(self, jsobj)
 
         for key, value in jsobj.iteritems():
             if key == 'kind':
@@ -90,8 +91,26 @@ class Playlist(object):
             setattr(self, ('_%s' % key), value)
 
 
+    def mutation_update(self):
+        mutate = {}
+        mutate['id'] = self._id
 
-class PlaylistList(object):
+        for prop in self._dirtyProps:
+            mutate[prop] = getattr(self, ('_%s' % prop))
+
+        self._dirtyProps.clear()
+
+        return {'update': mutate}
+
+    def mutation_delete(self):
+        mutate = {}
+        mutate['id'] = self._id
+
+        return {'delete': mutate}
+
+
+
+class PlaylistList(ModelBase):
     @staticmethod
     def kind():
         return 'sj#playlistList'
@@ -100,8 +119,7 @@ class PlaylistList(object):
         self._nextPageToken = None
         self._items = []
 
-        if jsdata:
-            self.from_json(jsdata)
+        ModelBase.__init__(self, jsdata)
 
     @property
     def nextPageToken(self):
@@ -112,8 +130,7 @@ class PlaylistList(object):
         return self._items
 
     def from_json(self, jsobj):
-        if 'kind' in jsobj:
-            assert jsobj['kind'] == PlaylistList.kind()
+        ModelBase.from_json(self, jsobj)
 
         if 'nextPageToken' in jsobj:
             self._nextPageToken = jsobj['nextPageToken']
