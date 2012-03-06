@@ -796,12 +796,18 @@ class SJ_Protocol:
         BASE_URL = 'https://www.googleapis.com/sj/v1beta1/'
 
         @staticmethod
-        def tracks():
-            return SJ_Protocol.MusicURL.BASE_URL+'tracks'
+        def tracks(trackid=None):
+            url = SJ_Protocol.MusicURL.BASE_URL+'tracks'
+            if trackid:
+                url += '/%s' % trackid
+            return url
 
         @staticmethod
-        def playlists():
-            return SJ_Protocol.MusicURL.BASE_URL+'playlists'
+        def playlists(plid=None):
+            url = SJ_Protocol.MusicURL.BASE_URL+'playlists'
+            if plid:
+                url += '/%s' % plid
+            return url
 
         @staticmethod
         def playlist_entries(plid):
@@ -814,17 +820,48 @@ class SJ_Protocol:
     def __init__(self):
         pass
 
+    def _handle_mutate_response(self, jsobj):
+        if not 'mutate_response' in jsobj:
+            return True
+
+        ids = []
+
+        mutations = jsobj['mutate_response']
+        for mutation in mutations:
+            if mutation['response_code'] != 'OK':
+                raise ValueError
+            if 'id' in mutation:
+                ids.append(mutation['id'])
+
+        return ids
+
+    def _kind_to_model(self, kind):
+        if kind == Track.kind():
+            return Track
+        elif kind == TrackList.kind():
+            return TrackList
+        elif kind == Playlist.kind():
+            return Playlist
+        elif kind == PlaylistList.kind():
+            return PlaylistList
+        else:
+            raise ValueError
+
     def tracks(self, response):
         jsdata = json.loads(response)
 
-        tl = TrackList(jsdata)
+        tl = self._kind_to_model(jsdata['kind'])(jsdata)
         return tl.items
 
     def playlists(self, response):
         jsdata = json.loads(response)
 
-        pl = PlaylistList(jsdata)
-        return pl.items
+        pl = self._kind_to_model(jsdata['kind'])(jsdata)
+
+        if type(pl) is PlaylistList:
+            return pl.items
+        elif type(pl) is Playlist:
+            return pl
 
     def playlist_entries(self, response):
         jsdata = json.loads(response)
@@ -834,4 +871,4 @@ class SJ_Protocol:
     def playlist_batch(self, response):
         jsdata = json.loads(response)
 
-        return jsdata
+        return self._handle_mutate_response(jsdata)

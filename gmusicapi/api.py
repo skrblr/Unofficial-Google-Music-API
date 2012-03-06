@@ -235,35 +235,65 @@ class Api(UsesLog):
     def get_sj_playlists(self):
         return self._sj_call('playlists')
 
-    def sj_create_playlist(self, playlist):
-        name = playlist
-        if type(playlist) is Playlist:
-            name = playlist.name
+    def get_sj_playlist(self, playlist_id):
+        return self._sj_call('playlists', playlist_id)
 
-        data =  { 'mutations': [ {
-                    'create' : {
-                        'name': name
-                    }
-                } ] }
+    def sj_create_playlist(self, playlist_name):
+        """Create playlist.
 
+        :param name: The name of the new playlist.
+        """
+        if type(playlist_name) is not str: raise TypeError
+
+        data =  {'mutations': [{'create': {'name': playlist_name}}]}
         jsdata = json.dumps(data)
 
-        return self._sj_call('playlist_batch', jsdata)
+        plid = self._sj_call('playlist_batch', jsdata)
+        assert len(plid) is 1
 
-    def sj_delete_playlist(self, playlist):
-        """Deletes a playlist.
+        return self._sj_call('playlists', None, plid[0])
 
-        :param playlist: A Playlist model, or a string id of a playlist.
+    def sj_update_playlist(self, playlists):
+        """Update playlist(s).
+
+        :param playlists: A Playlist model, or an array of Playlist models.
         """
-        if type(playlist) is Playlist:
-            playlist = playlist.id
+        if type(playlists) is not list:
+            playlists = [playlists]
 
-        data =  { 'mutations': [ {
-                    'delete': {
-                        'id': playlist
-                    }
-                } ] }
+        mutations = []
+        for plist in playlists:
+            if type(plist) is not Playlist: raise TypeError
 
+            mutations.append(plist.mutation_update())
+
+        data =  { 'mutations': mutations }
+        jsdata = json.dumps(data)
+
+        ids = self._sj_call('playlist_batch', jsdata)
+
+        lists = []
+        for i in ids:
+            plist = self._sj_call('playlists', None, i)
+            lists.append(plist)
+
+        return lists
+
+    def sj_delete_playlist(self, playlists):
+        """Delete playlist(s).
+
+        :param playlists: A Playlist model, or an array of Playlist models.
+        """
+        if type(playlists) is not list:
+            playlists = [playlists]
+
+        mutations = []
+        for plist in playlists:
+            if type(plist) is not Playlist: raise TypeError
+
+            mutations.append(plist.mutation_delete())
+
+        data =  { 'mutations': mutations }
         jsdata = json.dumps(data)
 
         return self._sj_call('playlist_batch', jsdata)
