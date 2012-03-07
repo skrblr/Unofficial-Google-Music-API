@@ -234,7 +234,7 @@ class Api(UsesLog):
         return self._sj_call('tracks')
 
     def get_sj_track(self, track_id):
-        return self._sj_call('tracks', track_id)
+        return self._sj_call('tracks', None, track_id)
 
     def get_sj_track_audio(self, track, bitrate=256):
         if type(track) is not Track: raise TypeError
@@ -251,7 +251,7 @@ class Api(UsesLog):
         return self._sj_call('playlists')
 
     def get_sj_playlist(self, playlist_id):
-        return self._sj_call('playlists', playlist_id)
+        return self._sj_call('playlists', None, playlist_id)
 
     def sj_create_playlist(self, playlist_name):
         """Create playlist.
@@ -312,6 +312,28 @@ class Api(UsesLog):
         jsdata = json.dumps(data)
 
         return self._sj_call('playlist_batch', jsdata)
+
+    def sj_add_to_playlist(self, playlist, tracks):
+        """Adds tracks to a playlist.
+
+        :param playlist: The Playlist model to which the songs will be added.
+        :param tracks: A list of Tracks.
+        """
+        if type(playlist) is not Playlist: raise TypeError
+
+        if type(tracks) is not list:
+            tracks = [tracks]
+
+        mutations = []
+        for t in tracks:
+            if type(t) is not Track: raise TypeError
+
+            mutations.append({'create': {'playlistId': playlist.id, 'trackId': t.id}})
+
+        data =  { 'mutations': mutations }
+        jsdata = json.dumps(data)
+
+        return self._sj_call('plentries_batch', jsdata)
 
 
     def get_playlist_songs(self, playlist_id):

@@ -70,6 +70,7 @@ def main():
     print "Selected", song['title'],"by",song['artist']
     song_id = song['id']
 
+    track = api.get_sj_track(song_id)
 
     playlist_name = raw_input("New playlist name: ")
     res = api.sj_create_playlist(playlist_name)
@@ -81,7 +82,7 @@ def main():
     print "Made new playlist named", res.name
     playlist = res
 
-    res = api.add_songs_to_playlist(playlist.id, song_id)
+    res = api.sj_add_to_playlist(playlist, track)
     print "Added to playlist."
 
     playlist.name = 'api playlist'

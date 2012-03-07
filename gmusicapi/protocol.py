@@ -822,6 +822,10 @@ class SJ_Protocol:
         def playlist_batch():
             return SJ_Protocol.MusicURL.BASE_URL+'playlistbatch'
 
+        @staticmethod
+        def plentries_batch():
+            return SJ_Protocol.MusicURL.BASE_URL+'plentriesbatch'
+
     def __init__(self):
         pass
 
@@ -889,6 +893,11 @@ class SJ_Protocol:
         return self.playlist_entries(response)
 
     def playlist_batch(self, response):
+        jsdata = json.loads(response)
+
+        return self._handle_mutate_response(jsdata)
+
+    def plentries_batch(self, response):
         jsdata = json.loads(response)
 
         return self._handle_mutate_response(jsdata)
