@@ -229,8 +229,23 @@ class Api(UsesLog):
 
         return tracks
 
+
     def get_sj_tracks(self):
         return self._sj_call('tracks')
+
+    def get_sj_track(self, track_id):
+        return self._sj_call('tracks', track_id)
+
+    def get_sj_track_audio(self, track, bitrate=256):
+        if type(track) is not Track: raise TypeError
+
+        url = SJ_Protocol.MusicURL.track_audio(track.id, bitrate)
+
+        err, resp = self.sj_session.audio_request(url)
+        if err is not None:
+            raise SkyjamException('Error code %d' % err)
+
+        return resp
 
     def get_sj_playlists(self):
         return self._sj_call('playlists')
@@ -297,6 +312,7 @@ class Api(UsesLog):
         jsdata = json.dumps(data)
 
         return self._sj_call('playlist_batch', jsdata)
+
 
     def get_playlist_songs(self, playlist_id):
         """Returns a list of `song dictionaries`__, which include `entryId` keys for the given playlist.

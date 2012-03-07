@@ -800,6 +800,10 @@ class SJ_Protocol:
             return url
 
         @staticmethod
+        def track_audio(trackid, bitrate=256):
+            return 'https://music.google.com/music/play?songid=%s&targetkbps=%d&pt=e' % (trackid, bitrate)
+
+        @staticmethod
         def playlists(plid=None):
             url = SJ_Protocol.MusicURL.BASE_URL+'playlists'
             if plid:
@@ -848,7 +852,10 @@ class SJ_Protocol:
         jsdata = json.loads(response)
 
         tl = self._kind_to_model(jsdata['kind'])(jsdata)
-        return tl.items
+        if type(tl) is TrackList:
+            return tl.items
+        elif type(tl) is Track:
+            return tl
 
     def playlists(self, response):
         jsdata = json.loads(response)

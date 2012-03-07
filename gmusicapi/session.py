@@ -254,12 +254,29 @@ class SJ_Session:
 
     def __init__(self):
         self.client = None
+        self.cookie = None
+
+    def _get_cookie(self):
+        header = {'Authorization': 'GoogleLogin auth=%s' % self.client.get_auth_token()}
+
+        req = Request('https://music.google.com/music/listen?u=0', None, header)
+        resp_obj = urlopen(req)
+        info = resp_obj.info()
+
+        cookies = dict(s.split(';', 1)[0].split('=', 1) for s in info.getheaders('Set-Cookie'))
+        if 'sjsaid' not in cookies:
+            raise KeyError
+
+        self.cookie = cookies['sjsaid']
+
 
     def login(self, email, password):
         self.client = ClientLogin(email, password, 'sj')
 
         if self.client.get_auth_token() is None:
             return False
+
+        self._get_cookie()
 
         return True
 
@@ -289,3 +306,22 @@ class SJ_Session:
         resp = resp_obj.read()
         resp_obj.close()
         return None, unistr(resp, encoding='utf8')
+
+    def audio_request(self, url, headers={}):
+        if not 'Content-Type' in headers:
+            headers['Content-Type'] = 'audio/mp3'
+        headers['Authorization'] = 'GoogleLogin auth=%s' % self.client.get_auth_token()
+        headers['Cookie'] = 'sjsaid=%s' % self.cookie
+
+        req = Request(url, None, headers)
+        err = None
+
+        try:
+            resp_obj = urlopen(req)
+        except HTTPError as e:
+            err = e.code
+            return err, e.read()
+        resp = resp_obj.read()
+        resp_obj.close()
+
+        return None, resp
