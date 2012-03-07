@@ -38,7 +38,7 @@ import metadata_pb2
 from utils import utils
 from utils.apilogging import LogController #TODO this is a hack
 from models.track import Track, TrackList
-from models.playlist import Playlist, PlaylistList
+from models.playlist import Playlist, PlaylistList, PlaylistEntry, PlaylistEntryList
 
 
 supported_filetypes = ("mp3")
@@ -812,7 +812,11 @@ class SJ_Protocol:
 
         @staticmethod
         def playlist_entries(plid):
-            return SJ_Protocol.MusicURL.BASE_URL+'playlists?plid=%s' % plid
+            return SJ_Protocol.MusicURL.BASE_URL+'plentries?plid=%s' % plid
+
+        @staticmethod
+        def playlist_entry(pleid):
+            return SJ_Protocol.MusicURL.BASE_URL+'plentries/%s' % pleid
 
         @staticmethod
         def playlist_batch():
@@ -845,6 +849,10 @@ class SJ_Protocol:
             return Playlist
         elif kind == PlaylistList.kind():
             return PlaylistList
+        elif kind == PlaylistEntry.kind():
+            return PlaylistEntry
+        elif kind == PlaylistEntryList.kind():
+            return PlaylistEntryList
         else:
             raise ValueError
 
@@ -870,7 +878,15 @@ class SJ_Protocol:
     def playlist_entries(self, response):
         jsdata = json.loads(response)
 
-        return jsdata
+        el = self._kind_to_model(jsdata['kind'])(jsdata)
+
+        if type(el) is PlaylistEntryList:
+            return el.items
+        elif type(el) is PlaylistEntry:
+            return el
+
+    def playlist_entry(self, response):
+        return self.playlist_entries(response)
 
     def playlist_batch(self, response):
         jsdata = json.loads(response)
