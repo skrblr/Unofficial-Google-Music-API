@@ -509,7 +509,7 @@ class WC_Protocol(object):
         The last response will not send a token.
         """
 
-        gets_logged = False
+        gets_logged = True
 
         @staticmethod
         def build_transaction(cont_token = None):
@@ -539,7 +539,7 @@ class WC_Protocol(object):
         Tracks include playlistEntryIds.
         """
 
-        gets_logged = False
+        gets_logged = True
 
         @staticmethod
         def build_transaction(playlist_id):
