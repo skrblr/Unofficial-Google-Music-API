@@ -15,7 +15,7 @@ lib = api.get_all_songs()
 print "%s total songs" % len(lib)
 
 for new_key in new_keys:
-    matching = [s for s in lib if s.get(new_key)]
+    matching = [s for s in lib if new_key in s]
     print
     print new_key
     print "  %s matches" % len(matching)
