@@ -261,6 +261,7 @@ class MetadataExpectations(object):
     class matchedId(_MetadataExpectation): #related to scan-and-match?
         mutable = False
     
+    #newish keys:
     class storeId(_MetadataExpectation):
         #Seems to be a matching track in the store.
         mutable = False
@@ -270,8 +271,22 @@ class MetadataExpectations(object):
         mutable = False
         optional = True  # only seen in the UK - related to scan and match?
         val_type = "boolean"
-        
-    
+
+    #introduced in issue 62:
+    class albumMatchedId(_MetadataExpectation):
+        mutable = False
+        optional = True  # scan and match for entire albums?
+
+    class pending(_MetadataExpectation):
+        mutable = False
+        optional = True  # scan and match results pending?
+        val_type = "boolean"
+
+    class url(_MetadataExpectation):
+        mutable = False
+        optional = True
+
+
     #Dependent metadata:
     class title(_MetadataExpectation):
         depends_on = "name"
