@@ -1,45 +1,23 @@
 #!/usr/bin/env python
-
-# Copyright (c) 2012, Simon Weber
-# All rights reserved.
-
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions are met:
-#     * Redistributions of source code must retain the above copyright
-#       notice, this list of conditions and the following disclaimer.
-#     * Redistributions in binary form must reproduce the above copyright
-#       notice, this list of conditions and the following disclaimer in the
-#       documentation and/or other materials provided with the distribution.
-#     * Neither the name of the copyright holder nor the
-#       names of the contributors may be used to endorse or promote products
-#       derived from this software without specific prior written permission.
-
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDERS BE LIABLE FOR ANY
-# DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-# ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+# -*- coding: utf-8 -*-
 
 """Utilities used in testing."""
 
-import numbers
-import unittest
-import random
-import inspect
 from getpass import getpass
+import inspect
+import logging
+import numbers
+import os
+import random
 import re
+import sys
+from gmusicapi.compat import unittest
 
 from gmusicapi.api import Api
 from gmusicapi.exceptions import CallFailure, NotLoggedIn
 from gmusicapi.protocol.metadata import md_expectations
-from gmusicapi.utils.apilogging import LogController
 
-log = LogController.get_logger("utils")
+log = logging.getLogger(__name__)
 
 #A regex for the gm id format, eg:
 #c293dd5a-9aa9-33c4-8b09-0c865b56ce46
@@ -48,14 +26,49 @@ gm_id_regex = re.compile(("{h}{{8}}-" +
                          ("{h}{{4}}-" * 3) +
                          "{h}{{12}}").format(h=hex_set))
 
+travis_id = 'E9:40:01:0E:51:7A'
+travis_name = 'Travis-CI (gmusicapi)'
+
+
+class NoticeLogging(logging.Handler):
+    """A log handler that, if asked to emit, will set
+    ``self.seen_message`` to True.
+    """
+
+    def __init__(self):
+        logging.Handler.__init__(self)  # cannot use super in py 2.6; logging is still old-style
+        self.seen_message = False
+
+    def emit(self, record):
+        self.seen_message = True
+
 
 def init():
     """Makes an instance of the unit-tested api and attempts to login with it.
     Returns the authenticated api.
+
+    This also detects if we're running on Travis, and if so, uses the environ for auth.
     """
 
-    api = UnitTestedApi()
+    api = UnitTestedApi(debug_logging=True)
 
+    #Attempt to get auth from environ.
+    user, passwd = os.environ.get('GMUSICAPI_TEST_USER'), os.environ.get('GMUSICAPI_TEST_PASSWD')
+
+    if os.environ.get('TRAVIS'):
+        if not (user and passwd):
+            print 'on Travis but could not read auth from environ; quitting.'
+            sys.exit(1)
+
+        #Travis runs on VMs with no "real" mac - we have to provide one.
+        api.login(user, passwd, uploader_id=travis_id, uploader_name=travis_name)
+        return api
+
+    if user and passwd:
+        api.login(user, passwd)
+        return api
+
+    #Prompt user for login.
     logged_in = False
     attempts = 0
 
@@ -63,9 +76,9 @@ def init():
 
     while not logged_in and attempts < 3:
         email = raw_input("Email: ")
-        password = getpass()
+        passwd = getpass()
 
-        logged_in = api.login(email, password)
+        logged_in = api.login(email, passwd)
         attempts += 1
 
     return api
@@ -202,7 +215,7 @@ class BaseTest(unittest.TestCase):
         cls.library = cls.api.get_all_songs()
 
         #I can't think of a way to test auto playlists and instant mixes.
-        cls.playlists = cls.api.get_all_playlist_ids(always_id_lists=True)['user']
+        cls.playlists = cls.api.get_all_playlist_ids()['user']
 
     @classmethod
     def tearDownClass(cls):

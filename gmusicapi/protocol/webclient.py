@@ -1,11 +1,14 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 """Calls made by the web client."""
 
 import copy
-import json
 import sys
 
 import validictory
 
+from gmusicapi.compat import json
 from gmusicapi.exceptions import CallFailure, ValidationException
 from gmusicapi.protocol.metadata import md_expectations
 from gmusicapi.protocol.shared import Call
@@ -17,10 +20,10 @@ service_url = base_url + 'services/'
 #Shared response schemas, built to include metadata expectations.
 song_schema = {
     "type": "object",
-    "properties": {
-        name: expt.get_schema() for
+    "properties": dict(
+        (name, expt.get_schema()) for
         name, expt in md_expectations.items()
-    },
+    ),
     #don't allow metadata not in expectations
     "additionalProperties": False
 }
@@ -77,9 +80,9 @@ class WcCall(Call):
         if 'success' in res and not res['success']:
             raise CallFailure(
                 "the server reported failure. This is usually"
-                "caused by bad arguments, but can also happen if requests"
-                "are made too quickly (eg creating a playlist then"
-                "modifying it before the server has created it)",
+                " caused by bad arguments, but can also happen if requests"
+                " are made too quickly (eg creating a playlist then"
+                " modifying it before the server has created it)",
                 cls.__name__)
 
     @classmethod
@@ -289,6 +292,10 @@ class DeleteSongs(WcCall):
         :param entry_ids: when deleting from playlists, corresponding list of entry ids.
         """
 
+        if entry_ids is None:
+            #this is strange, but apparently correct
+            entry_ids = [''] * len(song_ids)
+
         return {
             'json': json.dumps(
                 {"songIds": song_ids, "entryIds": entry_ids, "listId": playlist_id}
@@ -304,8 +311,11 @@ class DeleteSongs(WcCall):
 
 class GetLibrarySongs(WcCall):
     """Loads tracks from the library.
-    Since libraries can have many tracks, GM gives them back in chunks.
+
+    Libraries can have many tracks, so GM gives them back in chunks.
+
     Chunks will send a continuation token to get the next chunk.
+
     The first request needs no continuation token.
     The last response will not send a token.
     """
@@ -545,11 +555,8 @@ class UploadImage(WcCall):
     static_method = 'POST'
     static_url = service_url + 'imageupload'
     static_params = {'zx': '',  # ??
-                     'u': 0}  # TODO probably shouldn't hardcode this
+                     'u': 0}
 
-    #TODO this is returning (None, None)
-    #Can't seem to set on the webclient either; maybe it's them?
-    #I don't see the upload call being fired.
     _res_schema = {
         'type': 'object',
         'properties': {
@@ -560,8 +567,11 @@ class UploadImage(WcCall):
     }
 
     @staticmethod
-    def dynamic_data(image):
+    def dynamic_files(image_filepath):
         """
-        :param image: contents of the image as a bytestring.
+        :param image_filepath: path to an image
         """
-        return image
+        with open(image_filepath, 'rb') as f:
+            contents = f.read()
+
+        return {'albumArt': (image_filepath, contents)}
